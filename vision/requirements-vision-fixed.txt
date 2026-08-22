@@ -12,5 +12,11 @@ torchvision==0.24.1+cpu; python_version >= "3.13"
 opencv-python>=4.10; python_version >= "3.13"
 
 ultralytics
+
+# 얼굴 인식(InsightFace) — Python 3.12 계열에서 호환성이 가장 안정적이다(PRD 권장).
+# 3.13+에서 설치 실패 시 Python 3.12로 venv를 다시 만드는 것을 우선 시도한다.
+insightface
+onnxruntime
+
 requests
 python-dotenv
