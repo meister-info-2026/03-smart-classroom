@@ -8,42 +8,45 @@ description: >-
 
 > 웹캠 영상인식(YOLO/mediapipe) 연동 작업 시 이 스킬을 참고한다.
 
-## 패키지 설치 (Windows 주의)
-Windows 기본 경로 길이 제한(260자)과 최신 NumPy 2.x·PyTorch 바이너리 충돌로
-`pip install ultralytics`가 `[WinError 206] 파일 이름이나 확장명이 너무 깁니다`로
-실패할 수 있다. 아래처럼 버전을 고정해서 설치한다.
+## 패키지 설치 (초경량 ONNX 엔진 - PyTorch 설치 불필요!)
+무거운 PyTorch(2.5GB)와 Ultralytics 대신 `onnxruntime`과 OpenCV 내장 DNN을 활용하여 10초 만에 설치가 완료되며, Windows DLL 충돌([WinError 1114] c10.dll)이 원천 차단됩니다.
 ```powershell
 cd vision
-# Python 3.12 명시 및 .gitignore 호환 표준 이름 'venv' 생성
+# Python 3.10 ~ 3.12 (또는 최신 Python)
 py -3.12 -m venv venv
 .\venv\Scripts\Activate.ps1
-# requirements.txt로 설치 (PyTorch CPU, OpenCV, ONNXRuntime, MediaPipe, Pillow 등 포함)
+# requirements.txt로 초경량 설치 (ONNXRuntime, OpenCV, Pillow, Scipy 등 약 150MB)
 pip install -r requirements.txt
 ```
-그래도 경로 에러가 나면 관리자 권한 PowerShell에서 Windows 긴 경로 제한을 아예
-해제한다(FAQ 참고):
-```powershell
-New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
-```
 
-## 최소 파이프라인 (YOLOv8n 예시 — 실제 검증된 조합)
-사람 감지처럼 "특정 인물 식별이 아닌 사람/사물 존재 여부"에는 mediapipe의
-얼굴 감지보다 YOLOv8n(경량 객체 감지 모델)이 더 적합하고 실제로도 검증됐다.
+## 최소 파이프라인 (초경량 YOLOv8 ONNX 듀얼 엔진 예시)
+`yolov8n.onnx` 모델(12.8MB, Git 추적 포함)을 로드하여 ONNXRuntime 또는 OpenCV 내장 DNN으로 CPU 실시간 고속 추론(15~30ms)을 수행합니다.
 ```python
 import cv2
-from ultralytics import YOLO
+import numpy as np
 
-model = YOLO("yolov8n.pt")
-cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)  # Windows에서는 CAP_DSHOW로 열어야 웹캠 인식이 안정적
+# OpenCV 내장 DNN으로 별도 컴파일러 없이 즉시 ONNX 로드 (또는 onnxruntime 사용)
+net = cv2.dnn.readNetFromONNX("yolov8n.onnx")
+cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)  # Windows에서는 CAP_DSHOW 권장
 
 while True:
     ok, frame = cap.read()
     if not ok:
         continue
-    results = model(frame, classes=[0], verbose=False)  # class 0 = person
-    detected = len(results[0].boxes) > 0
-    # 상태가 바뀔 때만 이벤트 전송 (vision-rules.md 참고)
+    # 640x640 blob 변환 후 추론
+    blob = cv2.dnn.blobFromImage(frame, 1/255.0, (640, 640), swapRB=True, crop=False)
+    net.setInput(blob)
+    preds = net.forward()
+    # NMS 필터링 후 감지 결과 확인 및 이벤트 전송
 ```
+
+## 김재민 학생(얼굴인식 AI)을 위한 초경량 구현 가이드
+무겁고 C++ 컴파일러 에러가 발생하는 `face_recognition`/`dlib` 대신, `opencv-python`에 기본 내장된 YuNet/SFace 모델을 사용하면 단 10줄의 코드로 학생 얼굴을 감지·식별할 수 있습니다:
+- **얼굴 검출 (Face Detection)**: `cv2.FaceDetectorYN.create()`
+- **얼굴 인식 및 임베딩 (Face Recognition)**: `cv2.FaceRecognizerSF.create()`
+- **유사도 판정**: `recognizer.match(feat1, feat2, cv2.FaceRecognizerSF_FR_COSINE)`
+- **화면 한글 출력**: `main.py`의 `put_korean_text()`를 활용하여 학생 이름 및 학번 선명 렌더링
+
 
 <details>
 <summary>mediapipe로도 가능 (얼굴 감지 등 다른 용도일 때)</summary>
