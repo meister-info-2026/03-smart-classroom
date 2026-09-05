@@ -14,12 +14,11 @@ Windows 기본 경로 길이 제한(260자)과 최신 NumPy 2.x·PyTorch 바이�
 실패할 수 있다. 아래처럼 버전을 고정해서 설치한다.
 ```powershell
 cd vision
-python -m venv venv
+# Python 3.12 명시 및 .gitignore 호환 표준 이름 'venv' 생성
+py -3.12 -m venv venv
 .\venv\Scripts\Activate.ps1
-# 1. 경로 에러가 없는 경량 CPU PyTorch 설치
-pip install torch==2.2.2+cpu torchvision==0.17.2+cpu --extra-index-url https://download.pytorch.org/whl/cpu
-# 2. 호환 패키지 설치
-pip install "numpy<2" opencv-python==4.9.0.80 ultralytics requests python-dotenv
+# requirements.txt로 설치 (PyTorch CPU, OpenCV, ONNXRuntime, MediaPipe, Pillow 등 포함)
+pip install -r requirements.txt
 ```
 그래도 경로 에러가 나면 관리자 권한 PowerShell에서 Windows 긴 경로 제한을 아예
 해제한다(FAQ 참고):
