@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>라즈베리파이 5 입문: 회로 없이 통신부터 정복하기 (ELI5 가이드)</title>
+  <style>
+    /* ==========================================================================
+       Meta Brand Presentation Style — Design Tokens & Core System
+       ========================================================================== */
+    :root {
+      --bg-primary: #FFFFFF;
+      --bg-secondary: #F8F9FA;
+      --bg-tertiary: #F0F2F5;
+      --card-bg: #FFFFFF;
+      --border-color: #E4E6EB;
+      --border-subtle: #CED0D4;
+      
+      --text-primary: #1C1E21;
+      --text-secondary: #65676B;
+      --text-muted: #8A8D91;
+      
+      --meta-blue: #0866FF;
+      --meta-blue-hover: #0055D4;
+      --meta-blue-light: #E7F3FF;
+      
+      --accent-green: #00A400;
+      --accent-green-light: #EBF8EB;
+      --accent-amber: #F58B00;
+      --accent-amber-light: #FFF8EB;
+      --accent-red: #FA383E;
+      --accent-red-light: #FDE8E8;
+      --accent-purple: #8B5CF6;
+      --accent-purple-light: #F3E8FF;
+
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-full: 9999px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-secondary);
+      color: var(--text-primary);
+      font-family: var(--font-family);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* Top Navigation Bar */
+    header.meta-nav {
+      background: var(--bg-primary);
+      border-bottom: 1px solid var(--border-color);
+      height: 56px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .meta-logo-badge {
+      width: 32px;
+      height: 32px;
+      background: var(--meta-blue);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 800;
+      font-size: 16px;
+      box-shadow: 0 2px 4px rgba(8, 102, 255, 0.25);
+    }
+
+    .nav-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-tag {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      background: var(--meta-blue-light);
+      color: var(--meta-blue);
+    }
+
+    .nav-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .counter-pill {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: var(--bg-tertiary);
+      padding: 4px 12px;
+      border-radius: var(--radius-full);
+    }
+
+    .btn-icon {
+      background: none;
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      border-radius: var(--radius-sm);
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-icon:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border-color: var(--border-subtle);
+    }
+
+    /* Progress Line */
+    .progress-track {
+      height: 3px;
+      background: var(--border-color);
+      width: 100%;
+      position: relative;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: var(--meta-blue);
+      width: 11.11%;
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Presentation Main Viewport */
+    main.presentation-stage {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 32px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .slide-deck {
+      width: 100%;
+      max-width: 1160px;
+      height: 100%;
+      max-height: 720px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Individual Slide Styles */
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      padding: 44px 52px;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateX(30px);
+      transition: all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+      overflow-y: auto;
+      user-select: text;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(0);
+      z-index: 2;
+    }
+
+    .slide.prev {
+      transform: translateX(-30px);
+    }
+
+    /* Slide Content Typography & Layout */
+    .slide-header {
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .slide-pretitle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--meta-blue);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .slide-pretitle svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .slide-title {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .slide-subtitle {
+      font-size: 15px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .slide-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 20px;
+    }
+
+    /* Meta Cards & Grid Systems */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+
+    .meta-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .meta-card:hover {
+      border-color: var(--border-subtle);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .meta-card.highlight {
+      background: var(--meta-blue-light);
+      border-color: rgba(8, 102, 255, 0.2);
+    }
+
+    .card-icon-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .icon-box {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .icon-box.blue { background: var(--meta-blue-light); color: var(--meta-blue); }
+    .icon-box.green { background: var(--accent-green-light); color: var(--accent-green); }
+    .icon-box.amber { background: var(--accent-amber-light); color: var(--accent-amber); }
+    .icon-box.red { background: var(--accent-red-light); color: var(--accent-red); }
+    .icon-box.purple { background: var(--accent-purple-light); color: var(--accent-purple); }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .card-tag {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #fff;
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      margin-left: auto;
+    }
+
+    .card-desc {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+
+    /* ELI5 Analogy Box (황금 비유 상자) */
+    .eli5-box {
+      background: linear-gradient(135deg, #FFFFFF 0%, var(--bg-secondary) 100%);
+      border: 2px dashed var(--meta-blue);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .eli5-avatar {
+      font-size: 28px;
+      line-height: 1;
+      padding: 8px;
+      background: var(--meta-blue-light);
+      border-radius: 50%;
+    }
+
+    .eli5-content h4 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--meta-blue);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .eli5-content p {
+      font-size: 13.5px;
+      color: var(--text-primary);
+      line-height: 1.5;
+    }
+
+    /* Terminal & Code Block */
+    .code-container {
+      background: #18191A;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid #2D3035;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    .code-header {
+      background: #242526;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #3A3B3C;
+    }
+
+    .code-title {
+      font-size: 12px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      color: #B0B3B8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .code-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .dot.r { background: #ED4C5C; }
+    .dot.y { background: #FDAB3D; }
+    .dot.g { background: #00CA72; }
+
+    .btn-copy {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #E4E6EB;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.15s;
+    }
+
+    .btn-copy:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    pre.code-body {
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: #E4E6EB;
+      line-height: 1.6;
+      overflow-x: auto;
+      margin: 0;
+    }
+
+    .kw { color: #569CD6; font-weight: 600; }
+    .fn { color: #DCDCAA; }
+    .str { color: #CE9178; }
+    .cmt { color: #6A9955; font-style: italic; }
+    .num { color: #B5CEA8; }
+    .key { color: #9CDCFE; }
+
+    /* Interactive Simulator */
+    .simulator-box {
+      background: #F8F9FA;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .sim-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn-action {
+      background: var(--meta-blue);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.15s;
+    }
+
+    .btn-action:hover {
+      background: var(--meta-blue-hover);
+    }
+
+    .sim-terminal {
+      background: #18191A;
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      color: #00CA72;
+      min-height: 90px;
+      max-height: 120px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    /* Bottom Control Bar */
+    footer.presentation-footer {
+      height: 60px;
+      background: var(--bg-primary);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      flex-shrink: 0;
+    }
+
+    .footer-left {
+      font-size: 13px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .key-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+    }
+
+    .footer-nav-buttons {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-nav {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      padding: 8px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-nav:hover:not(:disabled) {
+      background: var(--bg-tertiary);
+      border-color: var(--border-subtle);
+    }
+
+    .btn-nav.primary {
+      background: var(--meta-blue);
+      border-color: var(--meta-blue);
+      color: #fff;
+    }
+
+    .btn-nav.primary:hover:not(:disabled) {
+      background: var(--meta-blue-hover);
+    }
+
+    .btn-nav:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* SVG Helper */
+    svg {
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    /* Print Handout Optimization */
+    @media print {
+      body {
+        height: auto;
+        overflow: visible;
+        background: #fff;
+      }
+      header.meta-nav, footer.presentation-footer, .progress-track {
+        display: none !important;
+      }
+      main.presentation-stage {
+        padding: 0;
+        display: block;
+      }
+      .slide-deck {
+        border: none;
+        box-shadow: none;
+        max-height: none;
+      }
+      .slide {
+        position: relative !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: none !important;
+        page-break-after: always;
+        height: 100vh;
+        border-bottom: 2px solid #E4E6EB;
+        padding: 40px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header class="meta-nav">
+    <div class="brand-section">
+      <div class="meta-logo-badge">π</div>
+      <div class="nav-title">
+        <span>스마트 교실 IoT 연동 가이드</span>
+        <span class="nav-tag">ELI5 Edition</span>
+      </div>
+    </div>
+
+    <div class="nav-controls">
+      <div class="counter-pill">
+        <span id="currentSlideNum">1</span> / <span id="totalSlideNum">9</span>
+      </div>
+      <button class="btn-icon" id="fullscreenBtn" title="전체화면 토글 (F)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Progress Bar -->
+  <div class="progress-track">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
+  <!-- Main Slide Deck Stage -->
+  <main class="presentation-stage">
+    <div class="slide-deck">
+
+      <!-- ====================================================================
+           Slide 1: Welcome & Mission
+           ==================================================================== -->
+      <section class="slide active" data-slide="1">
+        <div class="slide-header">
+          <div class="slide-pretitle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+            라즈베리파이 5 담당자를 위한 웰컴 온보딩
+          </div>
+          <h1 class="slide-title">회로 연결 없이, 통신부터 정복하기!</h1>
+          <p class="slide-subtitle">하드웨어 지식 0%에서 시작해도 괜찮습니다. 백엔드와 컴퓨터끼리 말 통하는 법부터 배웁니다.</p>
+        </div>
+
+        <div class="slide-body">
+          <div class="eli5-box">
+            <div class="eli5-avatar">💡</div>
+            <div class="eli5-content">
+              <h4>ELI5 핵심 생각: "이번엔 전선을 꽂지 않습니다!"</h4>
+              <p>
+                모터를 돌리고 센서를 전선에 연결하는 복잡한 일은 나중에 해도 늦지 않아요.<br>
+                지금 우리의 유일한 미션은 <strong>"친구 컴퓨터(백엔드)가 보낸 지시를 내 컴퓨터(라즈베리파이) 화면에 글자(print)로 띄우기"</strong>입니다!
+              </p>
+            </div>
+          </div>
+
+          <div class="grid-3" style="margin-top: 10px;">
+            <div class="meta-card highlight">
+              <div class="card-icon-header">
+                <div class="icon-box blue">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                  </svg>
+                </div>
+                <div>
+                  <div class="card-title">1단계: Mock 연동</div>
+                  <div style="font-size: 11px; color: var(--meta-blue); font-weight: 600;">오늘 우리가 할 일</div>
+                </div>
+              </div>
+              <p class="card-desc">
+                파이썬 코드로 백엔드에 접속해서 <strong>"자동문 열어!"</strong> 지시를 받아오고 터미널에 출력합니다.
+              </p>
+            </div>
+
+            <div class="meta-card">
+              <div class="card-icon-header">
+                <div class="icon-box amber">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                </div>
+                <div>
+                  <div class="card-title">2단계: 핀 연결 검증</div>
+                  <div style="font-size: 11px; color: var(--text-secondary);">다음 단계</div>
+                </div>
+              </div>
+              <p class="card-desc">
+                통신이 100% 검증된 후, 딱 1개 부품(예: LED)씩 핀에 꽂아보며 안전하게 하드웨어를 붙입니다.
+              </p>
+            </div>
+
+            <div class="meta-card">
+              <div class="card-icon-header">
+                <div class="icon-box green">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                    <path d="M2 17l10 5 10-5"></path>
+                    <path d="M2 12l10 5 10-5"></path>
+                  </svg>
+                </div>
+                <div>
+                  <div class="card-title">3단계: 스마트 교실 완성</div>
+                  <div style="font-size: 11px; color: var(--accent-green); font-weight: 600;">최종 목표</div>
+                </div>
+              </div>
+              <p class="card-desc">
+                얼굴인식 → 백엔드 판단 → 라즈베리파이 모터 제어 → 교사 대시보드 실시간 반영 성공!
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           Slide 2: The Big Picture (Mental Model)
+           ==================================================================== -->
+      <section class="slide" data-slide="2">
+        <div class="slide-header">
+          <div class="slide-pretitle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+            시스템의 전체 그림 이해하기
+          </div>
+          <h2 class="slide-title">교무실 상황판과 행동대장 반장 이야기</h2>
+          <p class="slide-subtitle">우리 팀원들이 만든 프로그램들이 어떻게 한 팀으로 움직이는지 살펴볼까요?</p>
+        </div>
+
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="meta-card">
+              <div class="card-icon-header">
+                <div class="icon-box purple">🏫</div>
+                <div>
+                  <div class="card-title">백엔드(FastAPI) = 교무실 화이트보드</div>
+                  <span class="card-tag">김다온 담당</span>
+                </div>
+              </div>
+              <p class="card-desc">
+                - 문지기(얼굴인식 카메라)가 <strong>"재민이 학생 출석!"</strong>이라고 알리면 상황판을 적습니다.<br>
+                - 선생님이 웹 버튼을 눌러도 이 화이트보드에 <strong>"자동문 열어둬라!"</strong> 지시가 적힙니다.<br>
+                - 교무실은 가만히 앉아서 전체 상황을 기록하고 종합하는 두뇌예요.
+              </p>
+            </div>
+
+            <div class="meta-card highlight">
+              <div class="card-icon-header">
+                <div class="icon-box blue">🏃‍♂️</div>
+                <div>
+                  <div class="card-title">라즈베리파이 5 = 교실의 행동대장 반장</div>
+                  <span class="card-tag" style="background:var(--meta-blue); color:#fff;">서종혁 담당 (나!)</span>
+                </div>
+              </div>
+              <p class="card-desc">
+                - 반장은 교실에 있으면서 교무실 상황판을 수시로 쳐다봅니다.<br>
+                - <strong>"어? 문 열라고 적혀있네?"</strong> 하면 실제로 문을 열고(모터 작동),<br>
+                - 교무실에 <strong>"선생님, 저 문 열어뒀습니다!"</strong>라고 완료 보고를 보냅니다.<br>
+                - 교실의 온습도나 불꽃 센서 값도 반장이 확인해서 교무실에 알려줍니다.
+              </p>
+            </div>
+          </div>
+
+          <!-- Flowchart Visual -->
+          <div style="background: var(--bg-tertiary); border-radius: var(--radius-md); padding: 18px; display: flex; align-items: center; justify-content: space-around; text-align: center;">
+            <div style="flex: 1;">
+              <div style="font-size: 24px; margin-bottom: 4px;">📷</div>
+              <div style="font-size: 13px; font-weight: 700;">비전(웹캠)</div>
+              <div style="font-size: 11px; color: var(--text-secondary);">"얼굴 인식 성공!"</div>
+            </div>
+            <div style="color: var(--meta-blue); font-size: 18px; font-weight: bold;">➔</div>
+            <div style="flex: 1; background: #fff; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <div style="font-size: 24px; margin-bottom: 4px;">🏢</div>
+              <div style="font-size: 13px; font-weight: 700; color: var(--meta-blue);">백엔드 교무실</div>
+              <div style="font-size: 11px; color: var(--text-secondary);">"자동문 열기(OPEN) 지시 등록"</div>
+            </div>
+            <div style="color: var(--meta-blue); font-size: 18px; font-weight: bold;">➔</div>
+            <div style="flex: 1; background: var(--meta-blue-light); padding: 10px; border-radius: 8px; border: 1px solid rgba(8,102,255,0.3);">
+              <div style="font-size: 24px; margin-bottom: 4px;">🍓</div>
+              <div style="font-size: 13px; font-weight: 700; color: var(--meta-blue);">라즈베리파이 반장</div>
+              <div style="font-size: 11px; color: var(--text-primary); font-weight: 600;">지시 읽고 ➔ print("문 열림!")</div>
+            </div>
+            <div style="color: var(--meta-blue); font-size: 18px; font-weight: bold;">➔</div>
+            <div style="flex: 1;">
+              <div style="font-size: 24px; margin-bottom: 4px;">🖥️</div>
+              <div style="font-size: 13px; font-weight: 700;">교사 대시보드</div>
+              <div style="font-size: 11px; color: var(--accent-green); font-weight: 600;">"화면에 실시간 반영!"</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           Slide 3: REST API & JSON (Language)
+           ==================================================================== -->
+      <section class="slide" data-slide="3">
+        <div class="slide-header">
+          <div class="slide-pretitle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 17l6-6-6-6"></path>
+              <path d="M12 19h8"></path>
+            </svg>
+            대화 수단 배우기
+          </div>
+          <h2 class="slide-title">REST API와 JSON: 교무실과 주고받는 포스트잇</h2>
+          <p class="slide-subtitle">외계어처럼 들리지만, 사실은 그냥 '규칙이 있는 쪽지'일 뿐입니다.</p>
+        </div>
+
+        <div class="slide-body">
+          <div class="grid-2">
+            <!-- Left: Method -->
+            <div class="meta-card">
+              <div class="card-icon-header">
+                <div class="icon-box blue">📬</div>
+                <div>
+                  <div class="card-title">REST API (심부름 규칙)</div>
+                  <div style="font-size: 12px; color: var(--text-secondary);">딱 2가지만 씁니다</div>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 6px;">
+                <div style="background: #fff; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+                  <strong style="color: var(--meta-blue);">1. GET (읽어오기)</strong>
+                  <p style="font-size: 12.5px; color: var(--text-secondary); margin-top: 2px;">
+                    "선생님, 제게 시키실 일이 적혀있나요?" 하고 상황판을 읽어오는 심부름
+                  </p>
+                </div>
+                <div style="background: #fff; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+                  <strong style="color: var(--accent-green);">2. POST (제출하기)</strong>
+                  <p style="font-size: 12.5px; color: var(--text-secondary); margin-top: 2px;">
+                    "선생님, 시키신 문 열기 다 끝냈습니다!" 하고 완료 쪽지를 내는 심부름
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: JSON -->
+            <div class="meta-card">
+              <div class="card-icon-header">
+                <div class="icon-box amber">📝</div>
+                <div>
+                  <div class="card-title">JSON (포스트잇 양식)</div>
+                  <div style="font-size: 12px; color: var(--text-secondary);">이름과 내용의 짝꿍</div>
+                </div>
+              </div>
+              <p class="card-desc" style="margin-bottom: 8px;">
+                포스트잇에 아무렇게나 적으면 헷갈리니까, 중괄호 <code>{}</code> 안에 <code>"항목": "내용"</code>으로 단정하게 적기로 약속했습니다:
+              </p>
+              <div class="code-container" style="box-shadow: none;">
+                <div class="code-header">
+                  <span class="code-title">교무실에서 건네준 쪽지</span>
+                </div>
+                <pre class="code-body">{
+  <span class="key">"device_id"</span>: <span class="str">"servo_door"</span>,
+  <span class="key">"desired_state"</span>: <span class="str">"OPEN"</span>,   <span class="cmt">// 목표: 문 열어라!</span>
+  <span class="key">"desired_value"</span>: { <span class="key">"angle"</span>: <span class="num">90</span> }
+}</pre>
+              </div>
+            </div>
+          </div>
+
+          <div class="eli5-box" style="margin-top: 4px;">
+            <div class="eli5-avatar">💡</div>
+            <div class="eli5-content">
+              <h4>ELI5 한 줄 요약:</h4>
+              <p>
+                라즈베리파이는 <strong>GET</strong>으로 교무실 포스트잇(<strong>JSON</strong>)을 읽고, 다 하면 <strong>POST</strong>로 완료 포스트잇을 냅니다!
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           Slide 4: The Secret of Polling
+           ==================================================================== -->
+      <section class="slide" data-slide="4">
+        <div class="slide-header">
+          <div class="slide-pretitle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            핵심 동작 원리
+          </div>
+          <h2 class="slide-title">왜 반장이 3초마다 직접 찾아갈까? (폴링의 비밀)</h2>
+          <p class="slide-subtitle">"선생님이 반장을 직접 부르면 안 되나요?"에 대한 비밀을 풀어드립니다.</p>
+        </div>
+
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="meta-card">
+              <div class="card-icon-header">
+                <div class="icon-box red">❓</div>
+                <div>
+                  <div class="card-title">선생님이 반장을 못 부르는 이유</div>
+                </div>
+              </div>
+              <p class="card-desc">
+                학교나 집의 Wi-Fi 안에서는 라즈베리파이의 IP 주소가 수시로 바뀌고 방화벽 뒤에 숨어있습니다.<br><br>
+                즉, <strong>교무실(백엔드)은 반장이 지금 몇 반 몇 번 자리에 앉아있는지 알 수가 없어요!</strong><br>
+                그래서 교무실이 라즈베리파이로 먼저 전화를 거는 것은 불가능합니다.
+              </p>
+            </div>
+
+            <div class="meta-card highlight">
+              <div class="card-icon-header">
+                <div class="icon-box blue">🔄</div>
+                <div>
+                  <div class="card-title">해결책: 폴링 (Polling, 주기적 방문)</div>
+                </div>
+              </div>
+              <p class="card-desc">
+                반장이 3초마다 교무실 문을 두드립니다:<br><br>
+                1. <strong>"선생님, 저한테 시킬 일 있으세요?"</strong> (GET desired-state)<br>
+                2. <strong>"어, 자동문(servo_door) 열어라!"</strong> (응답 받음)<br>
+                3. 반장이 문을 열고는, <strong>"문 열었습니다!"</strong> (POST state 보고)<br>
+                4. <strong>3초 쉬고</strong> 다시 1번으로! (무한 반복)
+              </p>
+            </div>
+          </div>
+
+          <!-- Visual Rhythm of Polling -->
+          <div style="background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+            <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px; color: var(--text-primary);">
+              ⏱️ 3초 폴링 루프의 리듬 (코드 한눈에 보기)
+            </div>
+            <div style="font-family: var(--font-mono); font-size: 12.5px; background: var(--bg-tertiary); padding: 12px; border-radius: 6px; color: #1C1E21; line-height: 1.6;">
+              <span class="kw">while</span> <span class="num">True</span>:<br>
+              &nbsp;&nbsp;지시 = 교무실에_물어보기(<span class="str">"servo_door"</span>)&nbsp;&nbsp;<span class="cmt"># GET /desired-state</span><br>
+              &nbsp;&nbsp;<span class="kw">if</span> 지시 == <span class="str">"OPEN"</span>:<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">print</span>(<span class="str">"🚪 [디버깅] 자동문 서보모터 90도 작동!"</span>)<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;교무실에_보고하기(<span class="str">"servo_door"</span>, <span class="str">"OPEN"</span>)&nbsp;&nbsp;<span class="cmt"># POST /state</span><br>
+              &nbsp;&nbsp;time.<span class="fn">sleep</span>(<span class="num">3</span>)&nbsp;&nbsp;<span class="cmt"># 3초 쉬고 다시 질문하러 가기!</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           Slide 5: The 3 Golden Keys
+           ==================================================================== -->
+      <section class="slide" data-slide="5">
+        <div class="slide-header">
+          <div class="slide-pretitle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 2l-2 2m-6.4 6.4a5.5 5.5 0 1 0-7.8 7.8 5.5 5.5 0 0 0 7.8-7.8L21 2m-4.6 4.6l2 2"></path>
+            </svg>
+            필수 준비물
+          </div>
+          <h2 class="slide-title">딱 3가지만 맞추면 통신 100% 성공!</h2>
+          <p class="slide-subtitle">백엔드 친구와 이 3가지 단어만 똑같이 맞추면 모든 통신이 열립니다.</p>
+        </div>
+
+        <div class="slide-body">
+          <div class="grid-3">
+            <!-- Key 1 -->
+            <div class="meta-card">
+              <div class="card-icon-header">
+                <div class="icon-box amber">🔑</div>
+                <div>
+                  <div class="card-title">1. 출입증 (API Key)</div>
+                  <div style="font-size: 11px; color: var(--text-secondary);">X-Device-Api-Key</div>
+                </div>
+              </div>
+              <p class="card-desc">
+                교무실 문을 열 때 보여주는 암호입니다.<br>
+                백엔드와 내 파일(<code>.env</code>)의 글자가 점 하나까지 같아야 합니다.
+              </p>
+              <div style="margin-top: auto; padding-top: 10px;">
+                <code style="font-size: 11.5px; background: #fff; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); display: block; word-break: break-all;">
+                  CLASS_2026_09_05_v1_0_0
+                </code>
+              </div>
+            </div>
+
+            <!-- Key 2 -->
+            <div class="meta-card">
+              <div class="card-icon-header">
+                <div class="icon-box blue">📍</div>
+                <div>
+                  <div class="card-title">2. 교무실 주소 (URL)</div>
+                  <div style="font-size: 11px; color: var(--text-secondary);">BACKEND_URL</div>
+                </div>
+              </div>
+              <p class="card-desc">
+                백엔드를 켠 친구 PC의 로컬 IP 주소입니다.<br>
+                <strong>주의:</strong> <code>localhost</code>는 나 자신을 뜻하므로 절대 쓰면 안 됩니다!
+              </p>
+              <div style="margin-top: auto; padding-top: 10px;">
+                <code style="font-size: 11.5px; background: #fff; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); display: block;">
+                  http://192.168.x.x:8000
+                </code>
+              </div>
+            </div>
+
+            <!-- Key 3 -->
+            <div class="meta-card">
+              <div class="card-icon-header">
+                <div class="icon-box green">🏷️</div>
+                <div>
+                  <div class="card-title">3. 내 부품 이름 (ID)</div>
+                  <div style="font-size: 11px; color: var(--text-secondary);">device_id</div>
+                </div>
+              </div>
+              <p class="card-desc">
+                교무실 장부에 미리 등록된 정확한 이름표입니다. 철자가 틀리면 교무실이 못 알아들어요.
+              </p>
+              <div style="margin-top: auto; padding-top: 10px;">
+                <code style="font-size: 11.5px; background: #fff; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); display: block;">
+                  servo_door, reed_switch, dht_sensor ...
+                </code>
+              </div>
+            </div>
+          </div>
+
+          <div class="eli5-box">
+            <div class="eli5-avatar">🤝</div>
+            <div class="eli5-content">
+              <h4>백엔드 담당 친구에게 딱 이 1마디만 물어보세요:</h4>
+              <p style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-top: 2px;">
+                "다온아, 네 컴퓨터 <code>ipconfig</code> 쳐서 나온 <strong>IPv4 주소</strong>가 뭐야? 그리고 <strong>API 키</strong>는 뭐야?"
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           Slide 6: Hands-on Step 1 (Ping)
+           ==================================================================== -->
+      <section class="slide" data-slide="6">
+        <div class="slide-header">
+          <div class="slide-pretitle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            1단계 실습: 교무실에 첫 인사 건네기
+          </div>
+          <h2 class="slide-title">5줄짜리 파이썬 코드로 "안녕 백엔드!"</h2>
+          <p class="slide-subtitle">내 라즈베리파이에서 백엔드까지 전파가 닿는지 30초 만에 확인해봅시다.</p>
+        </div>
+
+        <div class="slide-body">
+          <div class="grid-2">
+            <!-- Code Box -->
+            <div class="code-container">
+              <div class="code-header">
+                <span class="code-title">pi/01_ping_backend.py</span>
+                <button class="btn-copy" onclick="copyCode('code1')">코드 복사</button>
+              </div>
+              <pre class="code-body" id="code1"><span class="kw">import</span> requests
+
+<span class="cmt"># 1. 백엔드 주소 (친구 IP로 변경하세요!)</span>
+URL = <span class="str">"http://192.168.0.100:8000/api/devices"</span>
+
+<span class="kw">try</span>:
+    res = requests.<span class="fn">get</span>(URL, timeout=<span class="num">3</span>)
+    <span class="kw">if</span> res.status_code == <span class="num">200</span>:
+        <span class="fn">print</span>(<span class="str">"🎉 [성공] 교무실과 연결되었습니다!"</span>)
+        <span class="fn">print</span>(<span class="str">"등록된 디바이스 개수:"</span>, len(res.json()[<span class="str">"data"</span>]))
+<span class="kw">except</span> Exception <span class="kw">as</span> e:
+    <span class="fn">print</span>(<span class="str">"❌ [실패] 교무실에 닿지 않아요:"</span>, e)</pre>
+            </div>
+
+            <!-- Explanation & Run -->
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <div class="meta-card" style="flex: 1;">
+                <div class="card-icon-header">
+                  <div class="icon-box green">▶️</div>
+                  <div class="card-title">실행 방법</div>
+                </div>
+                <p class="card-desc">
+                  터미널(명령 프롬프트)을 열고 딱 한 줄만 입력하세요:
+                </p>
+                <div style="background: #18191A; color: #fff; padding: 10px; border-radius: 6px; font-family: var(--font-mono); font-size: 13px; margin: 8px 0;">
+                  python 01_ping_backend.py
+                </div>
+                <p class="card-desc">
+                  아래와 같은 글자가 나오면 통신 연결에 성공한 것입니다!
+                </p>
+                <div style="background: var(--accent-green-light); color: var(--accent-green); border: 1px solid rgba(0,164,0,0.2); padding: 10px; border-radius: 6px; font-family: var(--font-mono); font-size: 12px; font-weight: 600;">
+                  🎉 [성공] 교무실과 연결되었습니다!<br>
+                  등록된 디바이스 개수: 10
+                </div>
+              </div>
+
+              <div class="eli5-box" style="padding: 12px;">
+                <div class="eli5-avatar" style="font-size: 20px;">💡</div>
+                <div class="eli5-content">
+                  <p style="font-size: 12.5px;">
+                    이 5줄 코드가 성공했다는 것은, 두 컴퓨터 사이에 통신선이 완전히 뚫렸다는 뜻입니다!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           Slide 7: Hands-on Step 2 (Interactive Polling Simulator)
+           ==================================================================== -->
+      <section class="slide" data-slide="7">
+        <div class="slide-header">
+          <div class="slide-pretitle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            2단계 실습: 지시서(desired-state) 읽고 외치기
+          </div>
+          <h2 class="slide-title">서보모터 대신 print문으로 가상 자동문 완성!</h2>
+          <p class="slide-subtitle">직접 버튼을 눌러 교무실이 지시를 내렸을 때 파이가 어떻게 반응하는지 체험해보세요.</p>
+        </div>
+
+        <div class="slide-body">
+          <div class="grid-2">
+            <!-- Left: Code snippet -->
+            <div class="code-container">
+              <div class="code-header">
+                <span class="code-title">pi/02_servo_door_daemon_mock.py</span>
+                <button class="btn-copy" onclick="copyCode('code2')">코드 복사</button>
+              </div>
+              <pre class="code-body" id="code2"><span class="cmt"># 1. 원하는 상태(desired-state) 물어보기</span>
+headers = {<span class="str">"X-Device-Api-Key"</span>: API_KEY}
+res = requests.<span class="fn">get</span>(f<span class="str">"{URL}/servo_door/desired-state"</span>, headers=headers)
+desired = res.json()[<span class="str">"data"</span>][<span class="str">"desired_state"</span>]
+
+<span class="cmt"># 2. 지시가 OPEN이면 하드웨어 대신 print 출력!</span>
+<span class="kw">if</span> desired == <span class="str">"OPEN"</span>:
+    <span class="fn">print</span>(<span class="str">"🚪 [MG90S 서보모터] 위잉~ 문이 90도로 열립니다!"</span>)
+    
+    <span class="cmt"># 3. 교무실에 "문 열었습니다!" 보고하기 (POST)</span>
+    requests.<span class="fn">post</span>(f<span class="str">"{URL}/servo_door/state"</span>, 
+                  headers=headers, 
+                  json={<span class="str">"current_state"</span>: <span class="str">"OPEN"</span>})</pre>
+            </div>
+
+            <!-- Right: Interactive Simulator Widget -->
+            <div class="simulator-box">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="font-size: 14px; font-weight: 700; color: var(--text-primary);">
+                  🎮 가상 시뮬레이터 실습 (직접 눌러보세요!)
+                </div>
+                <span class="nav-tag" style="background: #EBF8EB; color: #00A400;">작동 대기 중</span>
+              </div>
+
+              <div class="sim-controls">
+                <button class="btn-action" onclick="triggerSim('OPEN')">
+                  <span>📱 선생님이 [문 열기] 클릭</span>
+                </button>
+                <button class="btn-action" style="background: var(--text-secondary);" onclick="triggerSim('CLOSED')">
+                  <span>📱 선생님이 [문 닫기] 클릭</span>
+                </button>
+                <button class="btn-nav" onclick="clearSimLog()" style="padding: 6px 12px; font-size: 12px;">
+                  지우기
+                </button>
+              </div>
+
+              <div style="font-size: 12px; color: var(--text-secondary); margin-top: -4px;">
+                👇 라즈베리파이 터미널 화면에 찍히는 모습:
+              </div>
+
+              <div class="sim-terminal" id="simTerminal">
+                <div>[10:00:00] 라즈베리파이 데몬 시작 (폴링 주기: 3초)...</div>
+                <div style="color: #8A8D91;">[10:00:03] 교무실 확인: servo_door = CLOSED (대기)</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="eli5-box">
+            <div class="eli5-avatar">✨</div>
+            <div class="eli5-content">
+              <h4>여기까지 성공하면 라즈베리파이 개발의 70%가 끝난 것입니다!</h4>
+              <p>
+                웹 화면에서 버튼을 누르면 내 터미널에 <code>[문이 열립니다!]</code> 글자가 뜨는 것을 보셨나요?<br>
+                나중에 실제 서보모터가 오면 이 <code>print()</code> 자리에 <code>servo.angle = 90</code> 딱 한 줄만 바꿔치기하면 끝납니다!
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           Slide 8: Troubleshooting (Error Translator)
+           ==================================================================== -->
+      <section class="slide" data-slide="8">
+        <div class="slide-header">
+          <div class="slide-pretitle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            에러 발생 시 당황하지 않기
+          </div>
+          <h2 class="slide-title">에러 코드 친절 번역기 (3초 처방전)</h2>
+          <p class="slide-subtitle">빨간 글씨가 떠도 무서워하지 마세요. 에러는 컴퓨터가 주는 힌트입니다.</p>
+        </div>
+
+        <div class="slide-body">
+          <div class="grid-3">
+            <!-- 401 -->
+            <div class="meta-card">
+              <div class="card-icon-header">
+                <div class="icon-box red">401</div>
+                <div>
+                  <div class="card-title">Unauthorized</div>
+                  <div style="font-size: 11px; color: var(--accent-red); font-weight: 600;">출입증 불일치</div>
+                </div>
+              </div>
+              <p class="card-desc">
+                <strong>"경비실 암호가 틀렸어요!"</strong><br><br>
+                <code>pi/.env</code> 파일의 <code>DEVICE_API_KEY</code>가 백엔드와 다릅니다. 복사해서 다시 붙여넣어 주세요.
+              </p>
+            </div>
+
+            <!-- 404 -->
+            <div class="meta-card">
+              <div class="card-icon-header">
+                <div class="icon-box amber">404</div>
+                <div>
+                  <div class="card-title">Not Found</div>
+                  <div style="font-size: 11px; color: var(--accent-amber); font-weight: 600;">이름표 못 찾음</div>
+                </div>
+              </div>
+              <p class="card-desc">
+                <strong>"그런 이름의 부품은 장부에 없대요!"</strong><br><br>
+                <code>servo_door</code> 대신 <code>servo_door1</code> 처럼 오타가 났는지 확인하세요.
+              </p>
+            </div>
+
+            <!-- Connection Refused -->
+            <div class="meta-card">
+              <div class="card-icon-header">
+                <div class="icon-box purple">Refused</div>
+                <div>
+                  <div class="card-title">Connection Error</div>
+                  <div style="font-size: 11px; color: var(--accent-purple); font-weight: 600;">문이 닫혀있음</div>
+                </div>
+              </div>
+              <p class="card-desc">
+                <strong>"교무실 주소에 아무도 없어요!"</strong><br><br>
+                1. 친구가 백엔드 서버를 켰는지 확인<br>
+                2. <code>BACKEND_URL</code>의 IP 주소가 맞는지 확인<br>
+                3. Windows 방화벽 8000포트 확인
+              </p>
+            </div>
+          </div>
+
+          <div class="meta-card" style="background: #fff; margin-top: 6px;">
+            <div style="font-size: 13.5px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">
+              🛡️ Windows 방화벽 1초 해결 명령어 (친구 컴퓨터 PowerShell 관리자 모드에서 실행)
+            </div>
+            <div style="background: #18191A; color: #E4E6EB; padding: 8px 12px; border-radius: 6px; font-family: var(--font-mono); font-size: 12px;">
+              netsh advfirewall firewall add rule name="fastapi-dev" dir=in action=allow protocol=TCP localport=8000
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           Slide 9: What's Next & Celebration
+           ==================================================================== -->
+      <section class="slide" data-slide="9">
+        <div class="slide-header">
+          <div class="slide-pretitle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+            </svg>
+            수고하셨습니다!
+          </div>
+          <h2 class="slide-title">축하합니다! 이제 진짜 하드웨어를 만나볼까요?</h2>
+          <p class="slide-subtitle">통신의 기본 원리를 완벽하게 마스터했습니다. 다음 단계는 더욱 즐겁습니다.</p>
+        </div>
+
+        <div class="slide-body">
+          <div class="grid-2">
+            <div class="meta-card highlight">
+              <div class="card-icon-header">
+                <div class="icon-box green">🏆</div>
+                <div>
+                  <div class="card-title">오늘 내가 해낸 것</div>
+                </div>
+              </div>
+              <p class="card-desc" style="font-size: 14px; line-height: 1.7;">
+                ✅ 백엔드와 라즈베리파이가 서로 통신하는 전체 구조 이해<br>
+                ✅ REST API, JSON, Polling 개념 완벽 정복<br>
+                ✅ 파이썬으로 <code>GET desired-state</code>와 <code>POST state</code> 구현 성공<br>
+                ✅ 모터 없이도 <code>print()</code>로 동작을 100% 검증하는 Mock 기법 습득
+              </p>
+            </div>
+
+            <div class="meta-card">
+              <div class="card-icon-header">
+                <div class="icon-box blue">🚀</div>
+                <div>
+                  <div class="card-title">다음 시간: 진짜 핀 꽂기 예고</div>
+                </div>
+              </div>
+              <p class="card-desc" style="font-size: 13.5px; line-height: 1.6;">
+                선생님이나 회로 담당 팀원(김하준)과 함께 전원이 꺼진 상태에서 안전하게 부품을 꽂고,<br><br>
+                <code>print("문 열림!")</code> 자리에<br>
+                <code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px; font-weight: 600;">from gpiozero import Servo</code><br>
+                <code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px; font-weight: 600;">servo.max()</code><br>
+                를 넣는 순간, 실제로 서보모터가 움직이는 짜릿한 마법을 경험하게 됩니다!
+              </p>
+            </div>
+          </div>
+
+          <div style="background: linear-gradient(135deg, #0866FF 0%, #0055D4 100%); color: #fff; padding: 18px 24px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <div style="font-size: 16px; font-weight: 700; margin-bottom: 2px;">
+                지금 바로 폴더의 <code>pi/01_ping_backend.py</code>를 실행해보세요!
+              </div>
+              <div style="font-size: 13px; opacity: 0.9;">
+                궁금한 점이 있거나 에러가 나면 언제든 팀원들에게 질문하세요. 우리는 한 팀입니다!
+              </div>
+            </div>
+            <button class="btn-nav" onclick="goToSlide(1)" style="background: #fff; color: var(--meta-blue); border: none; font-weight: 700;">
+              처음으로 돌아가기 ↺
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Bottom Navigation Controls -->
+  <footer class="presentation-footer">
+    <div class="footer-left">
+      <span>키보드 이동: <span class="key-badge">← 이전</span> <span class="key-badge">다음 →</span></span>
+      <span>전체화면: <span class="key-badge">F</span></span>
+    </div>
+
+    <div class="footer-nav-buttons">
+      <button class="btn-nav" id="prevBtn" onclick="prevSlide()" disabled>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        <span>이전</span>
+      </button>
+      <button class="btn-nav primary" id="nextBtn" onclick="nextSlide()">
+        <span>다음</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+    </div>
+  </footer>
+
+  <!-- Interactive Slide Controller Script -->
+  <script>
+    let currentSlide = 1;
+    const totalSlides = 9;
+
+    const currentSlideNumEl = document.getElementById('currentSlideNum');
+    const totalSlideNumEl = document.getElementById('totalSlideNum');
+    const progressBar = document.getElementById('progressBar');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const slides = document.querySelectorAll('.slide');
+
+    function updateView() {
+      slides.forEach((slide) => {
+        const slideIndex = parseInt(slide.getAttribute('data-slide'), 10);
+        slide.classList.remove('active', 'prev');
+        if (slideIndex === currentSlide) {
+          slide.classList.add('active');
+        } else if (slideIndex < currentSlide) {
+          slide.classList.add('prev');
+        }
+      });
+
+      currentSlideNumEl.textContent = currentSlide;
+      totalSlideNumEl.textContent = totalSlides;
+
+      const progressPct = (currentSlide / totalSlides) * 100;
+      progressBar.style.width = `${progressPct}%`;
+
+      prevBtn.disabled = currentSlide === 1;
+      nextBtn.disabled = currentSlide === totalSlides;
+      if (currentSlide === totalSlides) {
+        nextBtn.innerHTML = '<span>완료</span>';
+      } else {
+        nextBtn.innerHTML = '<span>다음</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>';
+      }
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides) {
+        currentSlide++;
+        updateView();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) {
+        currentSlide--;
+        updateView();
+      }
+    }
+
+    function goToSlide(n) {
+      if (n >= 1 && n <= totalSlides) {
+        currentSlide = n;
+        updateView();
+      }
+    }
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+        if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
+          nextSlide();
+        }
+      } else if (e.key === 'ArrowLeft') {
+        prevSlide();
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullscreen();
+      }
+    });
+
+    // Fullscreen Toggle
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => console.log(err));
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+    document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
+
+    // Code Copy Helper
+    function copyCode(id) {
+      const codeEl = document.getElementById(id);
+      if (!codeEl) return;
+      navigator.clipboard.writeText(codeEl.innerText).then(() => {
+        alert('코드가 클립보드에 복사되었습니다! 파이썬 파일에 붙여넣으세요.');
+      }).catch(err => {
+        console.error('복사 실패:', err);
+      });
+    }
+
+    // Interactive Simulator Logic for Slide 7
+    function triggerSim(state) {
+      const term = document.getElementById('simTerminal');
+      const now = new Date().toTimeString().split(' ')[0];
+
+      if (state === 'OPEN') {
+        term.innerHTML += `\n<div style="color: #FDAB3D;">[${now}] 📥 [교무실 지시 도착] servo_door = OPEN (각도: 90)</div>`;
+        term.innerHTML += `<div style="color: #00CA72; font-weight: bold;">[${now}] 🚪 [MG90S 서보모터] 위잉~ 문이 90도로 활짝 열립니다! (print 출력)</div>`;
+        term.innerHTML += `<div style="color: #9CDCFE;">[${now}] 📤 [교무실 보고 완료] POST /state {"current_state": "OPEN"} -> 200 OK</div>`;
+      } else {
+        term.innerHTML += `\n<div style="color: #FDAB3D;">[${now}] 📥 [교무실 지시 도착] servo_door = CLOSED (각도: 0)</div>`;
+        term.innerHTML += `<div style="color: #00CA72; font-weight: bold;">[${now}] 🚪 [MG90S 서보모터] 찰칵! 문이 0도로 닫힙니다. (print 출력)</div>`;
+        term.innerHTML += `<div style="color: #9CDCFE;">[${now}] 📤 [교무실 보고 완료] POST /state {"current_state": "CLOSED"} -> 200 OK</div>`;
+      }
+      term.scrollTop = term.scrollHeight;
+    }
+
+    function clearSimLog() {
+      const term = document.getElementById('simTerminal');
+      term.innerHTML = '<div>[시스템] 로그가 초기화되었습니다.</div>';
+    }
+
+    // Initial View Render
+    updateView();
+  </script>
+</body>
+</html>
